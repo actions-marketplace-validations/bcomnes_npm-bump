@@ -16,6 +16,9 @@ inputs:
   new-version:
     description: 'Version bump type or explicit version (e.g. major, premajor, prerelease, from-git, 1.2.3-beta.0). Required when version-type is "custom" or version-type is not set.'
     required: false
+  preid:
+    description: 'Prerelease identifier passed to npm version --preid (e.g. alpha, beta, or rc).'
+    required: false
   dist-tag:
     description: 'npm distribution tag used by the default npm publish command (e.g. latest or beta).'
     required: false
@@ -75,8 +78,14 @@ runs:
       shell: bash
       env:
         NEW_VERSION: ${{ steps['resolve-version'].outputs['new-version'] }}
+        PREID: ${{ inputs['preid'] }}
         GITHUB_TOKEN: ${{ inputs['github-token'] }}
-      run: npm version "$NEW_VERSION"
+      run: |
+        if [ -n "$PREID" ]; then
+          npm version "$NEW_VERSION" --preid "$PREID"
+        else
+          npm version "$NEW_VERSION"
+        fi
     - run: echo "release-tag=$(git describe --tags)" >> $GITHUB_OUTPUT
       id: release-tag-retreiver
       shell: bash

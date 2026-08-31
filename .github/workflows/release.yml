@@ -21,6 +21,15 @@ on:
       new-version:
         description: 'Custom version (only used when version-type is "custom")'
         required: false
+      preid:
+        description: 'Prerelease identifier (used with premajor, preminor, prepatch, or prerelease)'
+        type: choice
+        options:
+          - ''
+          - alpha
+          - beta
+          - rc
+        required: false
       dist-tag:
         description: 'npm distribution tag'
         type: choice
@@ -61,6 +70,7 @@ jobs:
       with:
         version-type: ${{ github.event.inputs['version-type'] }}
         new-version: ${{ github.event.inputs['new-version'] }}
+        preid: ${{ github.event.inputs['preid'] }}
         dist-tag: ${{ github.event.inputs['dist-tag'] }}
         publish-cmd: npm run release # private package; dist-tag only applies to the default npm publish command
         github-token: ${{ secrets.GITHUB_TOKEN }}
