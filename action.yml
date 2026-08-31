@@ -1,5 +1,5 @@
 name: 'npm bump'
-description: 'npm version {major,minor,patch} && npm publish as an action with other fun doodads.'
+description: 'npm version && npm publish as an action with other fun doodads.'
 branding:
   icon: box
   color: blue
@@ -11,11 +11,15 @@ inputs:
     description: 'Name for the version commit. Defaults to github.actor.'
     required: false
   version-type:
-    description: 'Version type dropdown value (major, minor, patch, custom). If provided, takes precedence over new-version unless custom.'
+    description: 'Version type dropdown value (major, minor, patch, premajor, preminor, prepatch, prerelease, from-git, custom). If provided, takes precedence over new-version unless custom.'
     required: false
   new-version:
-    description: 'Version bump type or explicit version (e.g. major, minor, patch, 1.2.3). Required when version-type is "custom" or version-type is not set.'
+    description: 'Version bump type or explicit version (e.g. major, premajor, prerelease, from-git, 1.2.3-beta.0). Required when version-type is "custom" or version-type is not set.'
     required: false
+  dist-tag:
+    description: 'npm distribution tag used by the default npm publish command (e.g. latest or beta).'
+    required: false
+    default: 'latest'
   push-version-commit:
     description: 'Run git push --follow-tags after npm version. Enable if you do not push in a prepublishOnly hook.'
     required: false
@@ -86,6 +90,13 @@ runs:
         fi
     - name: publish
       shell: bash
-      run: ${{ inputs['publish-cmd'] }}
       env:
+        DIST_TAG: ${{ inputs['dist-tag'] }}
         GH_TOKEN: ${{ inputs['github-token'] }}
+        PUBLISH_CMD: ${{ inputs['publish-cmd'] }}
+      run: |
+        if [ "$PUBLISH_CMD" = "npm publish" ]; then
+          npm publish --tag "$DIST_TAG"
+        else
+          eval "$PUBLISH_CMD"
+        fi

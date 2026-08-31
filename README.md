@@ -3,7 +3,7 @@
 [![npm bump](https://github.com/bcomnes/npm-bump/actions/workflows/release.yml/badge.svg)](https://github.com/bcomnes/npm-bump/actions/workflows/release.yml)
 [![Marketplace link](https://img.shields.io/badge/github%20marketplace-npm--bump-brightgreen)](https://github.com/marketplace/actions/npm-bump)
 
-`npm version {major,minor,patch}` && `npm publish` as an action. Full [npm lifecycle](https://docs.npmjs.com/misc/scripts) support with [releasearoni](https://github.com/bcomnes/releasearoni) for GitHub release creation. Opinionated and has a few assumptions.
+`npm version [<newversion> | major | minor | patch | premajor | preminor | prepatch | prerelease | from-git]` && `npm publish` as an action. Full [npm lifecycle](https://docs.npmjs.com/misc/scripts) support with [releasearoni](https://github.com/bcomnes/releasearoni) for GitHub release creation. Opinionated and has a few assumptions.
 
 ## Usage
 
@@ -22,12 +22,25 @@ on:
           - patch
           - minor
           - major
+          - prepatch
+          - preminor
+          - premajor
+          - prerelease
+          - from-git
           - custom
         default: 'patch'
         required: true
       new-version:
         description: 'Custom version (only used when version-type is "custom")'
         required: false
+      dist-tag:
+        description: 'npm distribution tag'
+        type: choice
+        options:
+          - latest
+          - beta
+        default: 'latest'
+        required: true
 
 env:
   FORCE_COLOR: 3
@@ -62,12 +75,13 @@ jobs:
       with:
         version-type: ${{ github.event.inputs['version-type'] }}
         new-version: ${{ github.event.inputs['new-version'] }}
+        dist-tag: ${{ github.event.inputs['dist-tag'] }}
         push-version-commit: true # if your prePublishOnly step pushes git commits, you can omit this input or set it to false.
         github-token: ${{ secrets.GITHUB_TOKEN }}
     - run: echo ${{ steps.npm-bump.outputs['release-tag'] }}
 ```
 
-This will give you a push-button triggered action that runs `npm version {major,minor,patch}`, `git push --follow-tags` and finally `npm publish`.
+This gives you a push-button action that runs the selected `npm version` operation, `git push --follow-tags`, and finally `npm publish --tag <dist-tag>`. For example, select `custom`, enter `12.0.0-beta.0`, and select `beta` to publish a beta without changing the `latest` release.
 
 It is advisable to set a `prePublishOnly` lifecycle hook that runs, at a minimum, git commit pushing, so that local runs of `npm version && npm publish` will push the version commits to git the same way as this action will.
 
@@ -104,12 +118,13 @@ Additionally, you should run your tests in order to block a release that isn't p
 
 ### Inputs
 
-- `version-type` (Optional): Dropdown value from `workflow_dispatch` — one of `major`, `minor`, `patch`, `custom`. When provided, the action resolves the version internally. Use `custom` together with `new-version` for an explicit version string.
-- `new-version` (Optional): Explicit version string (e.g. `1.2.3`) or bump type. Required when `version-type` is `custom` or when `version-type` is not set.
+- `version-type` (Optional): Dropdown value from `workflow_dispatch` — one of `major`, `minor`, `patch`, `premajor`, `preminor`, `prepatch`, `prerelease`, `from-git`, or `custom`. When provided, the action resolves the version internally. Use `custom` together with `new-version` for an explicit version string.
+- `new-version` (Optional): Explicit version string (e.g. `1.2.3-beta.0`) or any version operation accepted by `npm version`. Required when `version-type` is `custom` or when `version-type` is not set.
+- `dist-tag` (Default: `latest`): npm distribution tag passed to the default publish command, such as `latest` or `beta`. This input is not applied when `publish-cmd` is overridden.
 - `git-email` (Optional): Email for the version commit. Defaults to `<actor>@users.noreply.github.com`.
 - `git-username` (Optional): Name for the version commit. Defaults to `github.actor`.
 - `push-version-commit` (Default: `false`): Run `git push --follow-tags` after `npm version`. Enable if you don't push in a `prepublishOnly` hook.
-- `publish-cmd` (Default: `npm publish`): Command to run after `npm version`. Override to skip registry publishing or run a custom release script.
+- `publish-cmd` (Default: `npm publish`): Command to run after `npm version`. The default command receives `--tag <dist-tag>`. Override it to skip registry publishing or run a custom release script; custom commands are run unchanged.
 - `github-token`: Pass `secrets.GITHUB_TOKEN` to enable GitHub release creation via releasearoni.
 
 ### Outputs

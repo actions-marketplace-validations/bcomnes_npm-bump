@@ -10,12 +10,25 @@ on:
           - patch
           - minor
           - major
+          - prepatch
+          - preminor
+          - premajor
+          - prerelease
+          - from-git
           - custom
         default: 'patch'
         required: true
       new-version:
         description: 'Custom version (only used when version-type is "custom")'
         required: false
+      dist-tag:
+        description: 'npm distribution tag'
+        type: choice
+        options:
+          - latest
+          - beta
+        default: 'latest'
+        required: true
 
 env:
   FORCE_COLOR: 3
@@ -48,6 +61,7 @@ jobs:
       with:
         version-type: ${{ github.event.inputs['version-type'] }}
         new-version: ${{ github.event.inputs['new-version'] }}
-        publish-cmd: npm run release # private package; runs releasearoni-gh to create the GitHub release
+        dist-tag: ${{ github.event.inputs['dist-tag'] }}
+        publish-cmd: npm run release # private package; dist-tag only applies to the default npm publish command
         github-token: ${{ secrets.GITHUB_TOKEN }}
     - run: echo ${{ steps.npm-bump.outputs['release-tag'] }}
